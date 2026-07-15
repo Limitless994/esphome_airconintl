@@ -9,6 +9,7 @@
 #include "esphome/core/component.h"
 #include "esphome/core/log.h"
 #include "esphome/core/gpio.h"
+#include "esphome/core/hal.h"
 #include "esphome/components/uart/uart.h"
 #include "esphome/components/climate/climate.h"
 #include "esphome/components/sensor/sensor.h"
@@ -74,6 +75,7 @@ namespace esphome
             void set_indoor_humidity_status_sensor(Sensor *sensor) { this->indoor_humidity_status = sensor; }
             void set_re_pin(GPIOPin *pin) { this->re_pin = pin; }
             void set_de_pin(GPIOPin *pin) { this->de_pin = pin; }
+            void set_flow_control_pin(GPIOPin *pin) { this->flow_control_pin = pin; }
 
             void setup() override
             {
@@ -82,6 +84,10 @@ namespace esphome
                     read();
                 }
                 // Setup RS485 pins if configured
+                if (flow_control_pin != nullptr) {
+                    flow_control_pin->setup();
+                    flow_control_pin->digital_write(false); // Default to receive
+                }
                 if (re_pin != nullptr) {
                     re_pin->setup();
                     re_pin->digital_write(true); // Disable receive (idle)
@@ -283,11 +289,13 @@ namespace esphome
                     // Set RS485 to transmit mode
                     if (de_pin != nullptr) de_pin->digital_write(true);
                     if (re_pin != nullptr) re_pin->digital_write(true);
+                    if (flow_control_pin != nullptr) flow_control_pin->digital_write(true);
                     write_array(item.payload.data(), item.payload.size());
                     flush();
                     // Set RS485 back to receive mode
                     if (de_pin != nullptr) de_pin->digital_write(false);
                     if (re_pin != nullptr) re_pin->digital_write(false);
+                    if (flow_control_pin != nullptr) flow_control_pin->digital_write(false);
                     current_desc = item.description;
                     send_state = WAITING_ACK;
                     send_timestamp = millis();

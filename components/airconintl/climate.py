@@ -1,7 +1,7 @@
 from esphome.components import climate, sensor, uart
 import esphome.config_validation as cv
 import esphome.codegen as cg
-import esphome.pins as pins
+from esphome import pins
 from esphome.const import (
     CONF_ID,
     CONF_OUTDOOR_TEMPERATURE,
@@ -31,6 +31,7 @@ CONF_HUMIDITY_STATUS = "humidity_status"
 CONF_TEMPERATURE_UNIT = "temperature_unit"
 CONF_RE_PIN = "re_pin"
 CONF_DE_PIN = "de_pin"
+CONF_FLOW_CONTROL_PIN = "flow_control_pin"
 
 airconintl_ns = cg.esphome_ns.namespace("airconintl")
 AirconClimate = airconintl_ns.class_("AirconClimate", cg.PollingComponent, climate.Climate, uart.UARTDevice)
@@ -110,6 +111,7 @@ CONFIG_SCHEMA = cv.All(
             ),
             cv.Optional(CONF_RE_PIN): pins.gpio_output_pin_schema,
             cv.Optional(CONF_DE_PIN): pins.gpio_output_pin_schema,
+            cv.Optional(CONF_FLOW_CONTROL_PIN): pins.gpio_output_pin_schema,
         }
     )
     .extend(uart.UART_DEVICE_SCHEMA)
@@ -161,3 +163,6 @@ async def to_code(config):
     if CONF_DE_PIN in config:
         pin = await cg.gpio_pin_expression(config[CONF_DE_PIN])
         cg.add(var.set_de_pin(pin))
+    if CONF_FLOW_CONTROL_PIN in config:
+        pin = await cg.gpio_pin_expression(config[CONF_FLOW_CONTROL_PIN])
+        cg.add(var.set_flow_control_pin(pin))
